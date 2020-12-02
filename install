@@ -1,0 +1,69 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+echo "Installing Required Packages"
+pkg install proot tar wget -y
+
+mkdir ~/fedora
+cd ~/fedora
+
+echo "Downloading Rootfs\n\n"
+wget http://ftp.jaist.ac.jp/pub/Linux/Fedora/releases/33/Container/aarch64/images/Fedora-Container-Base-33-1.2.aarch64.tar.xz  -O fedora.tar.xz
+
+echo "unpacking rootfs"
+tar xvf fedora.tar.xz --strip-components=1 --exclude json --exclude VERSION
+tar xpf layer.tar
+
+echo "Removing unnessory files"
+chmod +w .
+rm layer.tar
+rm fedora.tar.xz
+
+echo "fixing dns"
+echo "nameserver 8.8.8.8" >~/fedora/etc/resolv.conf
+
+echo "creating start-fedora file"
+cat >start-fedora.sh <<-EOM
+#!/data/data/com.termux/files/usr/bin/bash
+unset LD_PRELOAD
+command="proot"
+command+=" --link2symlink"
+command+=" -0"
+command+=" -r ~/fedora"
+command+=" -b /dev"
+command+=" -b /proc"
+command+=" -b ~/fedora/root:/dev/shm"
+command+=" -w /root"
+command+=" /usr/bin/env -i"
+command+=" HOME=/root"
+command+=" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin"
+command+=" TERM=$TERM"
+command+=" LANG=C.UTF-8"
+command+=" /bin/bash --login"
+ com="$@"
+ if [ -z "$1" ];then
+     exec $command
+ else
+     $command -c "$com"
+ fi
+EOM
+
+echo "installation of fedora 33 finished "
+echo "use ./start-fedora.sh to start fedora"
+echo ""
+echo ""
+echo "starting fedora to clen the installation"
+
+echo "#!/bin/bash
+dnf update
+if [ -f /etc/resolv.conf ]; then
+    rm -rf /etc/resolv.conf
+fi
+
+if [ -f /run/systemd/resolve/stub-resolv.conf ]; then
+  rm -rf /run/systemd/resolve/stub-resolv.conf
+fi
+
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+rm -rf ~/.bash_profile" >~/fedora/root/.bash_profile
+
+bash start-fedora.sh

@@ -1,0 +1,2 @@
+chmod -R 777 ~/fedora
+rm -rf fedora 
