@@ -1,4 +1,4 @@
-# Termux Fedora
+# Termux Fedora (deprecated)
 
 Yet another Fedora installer for [Termux](https://termux.com/)
 
